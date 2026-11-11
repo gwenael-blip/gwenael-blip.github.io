@@ -1,5 +1,6 @@
-/* AKHC Studio Rental: renders the price list, switches language, filters the list.
- * Content lives in config.js (your details), gear.js (gear and prices) and text.js (wording). */
+/* AKHC Studio Rental: renders the gear list, switches language, filters the list.
+ * Content lives in config.js (your details), gear.js (the gear) and text.js (wording).
+ * No prices are shown anywhere on the site: the price comes with the quote. */
 (function () {
   'use strict';
 
@@ -18,7 +19,6 @@
   function t(key) { return (TXT[lang] && TXT[lang][key]) || TXT.en[key] || ''; }
   function tr(obj) { return obj ? (obj[lang] || obj.en || '') : ''; }
   function fill(s, vars) { return s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k]; }); }
-  function money(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'fo' ? '.' : ','); }
   function fold(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[øØ]/g, 'o').replace(/[æÆ]/g, 'ae').replace(/[ðÐ]/g, 'd').toLowerCase(); }
 
   function el(tag, attrs, kids) {
@@ -41,31 +41,14 @@
     return /^fo\b/i.test(navigator.language || '') ? 'fo' : 'en';
   }
 
-  function priceNode(it, per) {
-    var showPrice = !CFG.showOnlyConfirmedPrices || it.basis === 'confirmed';
-    var box = el('div', { 'class': 'item-price' });
-    if (!showPrice) { box.appendChild(el('span', { 'class': 'ask', text: t('askPrice') })); return box; }
-    if (it.basis === 'estimate') box.appendChild(el('span', { 'class': 'est', title: t('estTitle'), text: t('est') }));
-    box.appendChild(el('span', { 'class': 'amt', text: money(it.price) }));
-    box.appendChild(el('span', { 'class': 'unit', text: ' ' + (it.qty > 1 ? t('perDayEach') : t('perDay')) }));
-    return box;
-  }
-
   function renderPackages() {
     var wrap = $('#pkg-cards'), all = {};
     GEAR.categories.forEach(function (c) { c.items.forEach(function (it) { all[it.ref] = it; }); });
     var items = (GEAR.packages || []).map(function (r) { return all[r]; }).filter(Boolean);
     wrap.textContent = '';
     items.forEach(function (it) {
-      var show = !CFG.showOnlyConfirmedPrices || it.basis === 'confirmed';
-      var price = el('p', { 'class': 'price' });
-      if (show) {
-        price.appendChild(document.createTextNode(money(it.price) + ' '));
-        price.appendChild(el('small', { text: t('perDay') }));
-        if (it.basis === 'estimate') price.appendChild(el('span', { 'class': 'est', title: t('estTitle'), text: t('est') }));
-      } else price.appendChild(el('span', { 'class': 'ask', text: t('askPrice') }));
       wrap.appendChild(el('article', { 'class': 'card' }, [
-        el('h3', { text: it.name }), price,
+        el('h3', { text: it.name }),
         it.includes ? el('p', { text: tr(it.includes) }) : null
       ]));
     });
@@ -84,7 +67,6 @@
         if (it.qty > 1) name.appendChild(el('span', { 'class': 'qty', text: '×' + it.qty, 'aria-label': fill(t('available'), { n: it.qty }), title: fill(t('available'), { n: it.qty }) }));
         var li = el('li', { 'class': 'item', 'data-search': fold([it.name, tr(it.note), tr(it.includes), tr(cat.name)].join(' ')) }, [
           el('div', { 'class': 'item-main' }, [name]),
-          priceNode(it),
           window.AKHC_QUOTE ? window.AKHC_QUOTE.control(it) : null
         ]);
         var note = tr(it.note);
@@ -93,7 +75,6 @@
       });
       host.appendChild(el('section', { 'class': 'cat', id: id, 'aria-labelledby': id + '-h' }, [el('h3', { id: id + '-h', text: tr(cat.name) }), list]));
     });
-    $('#legend').textContent = GEAR.categories.some(function (c) { return c.items.some(function (i) { return i.basis === 'estimate'; }); }) && !CFG.showOnlyConfirmedPrices ? t('estLegend') : '';
     applyFilter();
   }
 

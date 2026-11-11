@@ -1,5 +1,5 @@
-/* AKHC Studio Rental: "Your list". Visitors add gear from the price list, set dates, see an estimate and send a
- * quote request, or keep the list for later.
+/* AKHC Studio Rental: "Your list". Visitors add gear from the gear list, set dates and send a quote request, or
+ * keep the list for later. No prices are shown anywhere: the price comes with the quote.
  *
  * The page has no server of its own. A request leaves through the visitor's own email app (or as text they copy),
  * and every request ends with a link (…#r1<data>~) that holds the list, the dates and what they typed. Opening that
@@ -9,9 +9,7 @@
 (function () {
   'use strict';
   var CFG = window.AKHC_CONFIG || {}, GEAR = window.AKHC_GEAR || { categories: [] }, TXT = window.AKHC_TEXT || { en: {} };
-  var KEY = 'akhc-list-v1', VAT = 25;
-  // Day rates charged for a number of days (the same scale as on the invoice).
-  var SCALE = [1, 1.5, 2, 2.4, 2.7, 2.7, 2.7, 3, 3.3, 3.6, 3.9, 4.2, 4.2, 4.2, 4.5, 4.8, 5.1, 5.3, 5.5, 5.5, 5.5, 5.7, 5.9, 6.1, 6.3];
+  var KEY = 'akhc-list-v1';
   var list = {}, form = { s: '', u: '', p: '', n: '', e: '', c: '', m: '' }, byKey = {}, order = [], lastCleared = null;
 
   function $(s, r) { return (r || document).querySelector(s); }
@@ -19,21 +17,16 @@
   function lang() { return document.documentElement.lang === 'fo' ? 'fo' : 'en'; }
   function t(k, v) { var s = (TXT[lang()] && TXT[lang()][k]) || TXT.en[k] || ''; return s.replace(/\{(\w+)\}/g, function (m, x) { return v && v[x] !== undefined ? v[x] : m; }); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function money(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, lang() === 'fo' ? '.' : ','); }
   function keyOf(it) { return Array.isArray(it.ref) ? it.ref.join(',') : String(it.ref); }
   function maxOf(it) { return Math.max(1, it.qty || (Array.isArray(it.ref) ? it.ref.length : 1)); }
-  function priced(it) { return !CFG.showOnlyConfirmedPrices || it.basis === 'confirmed'; }
   function dmy(iso) { return /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? iso.slice(8) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4) : ''; }
   function days() {
     if (!form.s || !form.u) return 0;
     var a = new Date(form.s + 'T12:00:00'), b = new Date(form.u + 'T12:00:00'), n = Math.round((b - a) / 86400000) + 1;
     return isNaN(n) || n < 1 ? 0 : n;
   }
-  function factor(n) { return n <= 0 ? 0 : n <= 25 ? SCALE[n - 1] : n <= 31 ? 6.5 : Math.round((6.5 + (n - 31) * 0.2) * 100) / 100; }
   function rows() { return order.filter(function (k) { return list[k] > 0; }).map(function (k) { return { k: k, it: byKey[k], n: list[k] }; }); }
   function count() { return rows().reduce(function (a, r) { return a + r.n; }, 0); }
-  function perDay() { return rows().reduce(function (a, r) { return a + (priced(r.it) ? r.n * (r.it.price || 0) : 0); }, 0); }
-  function unpriced() { return rows().filter(function (r) { return !priced(r.it); }).length; }
 
   GEAR.categories.forEach(function (c) { c.items.forEach(function (it) { var k = keyOf(it); byKey[k] = it; order.push(k); }); });
 
@@ -111,7 +104,6 @@
     L.push(t('qmDates') + ': ' + (n ? dmy(form.s) + ' - ' + dmy(form.u) + ' (' + t(n === 1 ? 'qDay1' : 'qDaysN', { n: n }) + ')' : t('qmNoDates')));
     L.push('', t('qmGear') + ':');
     rows().forEach(function (r) { L.push('  ' + r.n + ' x ' + r.it.name); });
-    if (perDay()) L.push('', t('qmEst') + ': ' + money(n ? perDay() * factor(n) : perDay()) + ' ' + t(n ? 'qmExVat' : 'qmPerDayExVat'));
     if (form.m) L.push('', t('qmMsg') + ':', form.m);
     L.push('', t('qmLink') + ':', link);
     return L.join('\n');
@@ -123,7 +115,7 @@
   function stepper(k, n, max, name) {
     return '<span class="stepper"><button type="button" data-q="dec" data-k="' + esc(k) + '" aria-label="' + esc(t('qLess', { name: name })) + '">&minus;</button><output aria-live="polite">' + n + '</output><button type="button" data-q="inc" data-k="' + esc(k) + '"' + (n >= max ? ' disabled' : '') + ' aria-label="' + esc(t('qMore', { name: name })) + '">+</button></span>';
   }
-  function control(it) { // the Add button or the counter on a row of the price list
+  function control(it) { // the Add button or the counter on a row of the gear list
     var k = keyOf(it), box = document.createElement('div');
     box.className = 'item-add'; box.setAttribute('data-qk', k);
     paintControl(box);
@@ -133,19 +125,16 @@
     var k = box.getAttribute('data-qk'), it = byKey[k], n = list[k] || 0; if (!it) return;
     box.innerHTML = n ? stepper(k, n, maxOf(it), it.name) : '<button type="button" class="add" data-q="inc" data-k="' + esc(k) + '" aria-label="' + esc(t('qAddAria', { name: it.name })) + '">+ ' + esc(t('qAdd')) + '</button>';
   }
-  function sums() {
-    var n = days(), pd = perDay(), f = factor(n), un = unpriced(), h = '';
+  function sums() { // no prices on the site: only how long the rental is and what happens next
     if (!rows().length) return '';
-    h += '<dl class="list-sum"><dt>' + esc(t('qPerDay')) + '</dt><dd>' + money(pd) + ' DKK</dd>';
-    if (n) h += '<dt>' + esc(t(n === 1 ? 'qEst1' : 'qEstN', { n: n })) + '</dt><dd class="big">' + money(pd * f) + ' DKK</dd><dt>' + esc(t('qWithVat', { p: VAT })) + '</dt><dd>' + money(pd * f * (1 + VAT / 100)) + ' DKK</dd>';
-    h += '</dl><p class="note">' + esc(n ? (n > 1 ? t('qScale', { n: n, f: String(f).replace('.', lang() === 'fo' ? ',' : '.') }) + ' ' : '') + t('qEstNote') : t('qNoDates')) + (un ? ' ' + esc(t('qAsk', { n: un })) : '') + '</p>';
-    return h;
+    var n = days();
+    return '<p class="note">' + esc((n ? t('qPeriod', { d: t(n === 1 ? 'qDay1' : 'qDaysN', { n: n }) }) : t('qNoDates')) + ' ' + t('qQuoteNote')) + '</p>';
   }
   function itemsHtml() {
     var r = rows();
     if (!r.length) return '<p class="list-empty">' + esc(t('qEmpty')) + '</p>';
     return '<ul class="list-items">' + r.map(function (x) {
-      return '<li><span><span class="nm">' + esc(x.it.name) + '</span><br><span class="pr">' + (priced(x.it) ? money(x.it.price) + ' ' + esc(t('perDay')) : esc(t('askPrice'))) + '</span></span><span class="list-ctl">' + stepper(x.k, x.n, maxOf(x.it), x.it.name) + '<button type="button" class="rm" data-q="rm" data-k="' + esc(x.k) + '" aria-label="' + esc(t('qRemove', { name: x.it.name })) + '">&times;</button></span></li>';
+      return '<li><span class="nm">' + esc(x.it.name) + '</span><span class="list-ctl">' + stepper(x.k, x.n, maxOf(x.it), x.it.name) + '<button type="button" class="rm" data-q="rm" data-k="' + esc(x.k) + '" aria-label="' + esc(t('qRemove', { name: x.it.name })) + '">&times;</button></span></li>';
     }).join('') + '</ul>';
   }
   function field(k, label, type, extra) { return '<label>' + esc(label) + '<input type="' + type + '" data-f="' + k + '" value="' + esc(form[k]) + '" ' + (extra || '') + '></label>'; }
@@ -175,12 +164,12 @@
     var u = $('#list [data-f="u"]'); if (u) { if (form.s) u.setAttribute('min', form.s); else u.removeAttribute('min'); }
     syncOutside();
   }
-  function syncOutside() { // the buttons in the price list and the bar at the bottom of a phone screen
+  function syncOutside() { // the buttons in the gear list and the bar at the bottom of a phone screen
     $$('[data-qk]').forEach(paintControl);
     var bar = $('#listbar'), n = count(), d = days();
     if (bar) {
       bar.hidden = !n; document.body.classList.toggle('has-list', !!n);
-      bar.innerHTML = '<span>' + esc(t('qBar', { n: n })) + '</span><span>' + (perDay() ? money(d ? perDay() * factor(d) : perDay()) + ' DKK' + (d ? '' : ' ' + esc(t('qBarDay'))) : '') + '</span>';
+      bar.innerHTML = '<span>' + esc(t('qBar', { n: n })) + '</span><span>' + (d ? esc(t(d === 1 ? 'qDay1' : 'qDaysN', { n: d })) : '') + '</span>';
     }
   }
 

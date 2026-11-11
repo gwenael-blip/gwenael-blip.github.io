@@ -16,9 +16,5 @@ window.AKHC_CONFIG = {
 
   /* Short links for "Save or share this list": the address of the small store that keeps a shared list in scrambled
    * form (the same one the signing page uses). Leave empty and the page makes a long link that holds the list itself. */
-  store: "https://akhc-sign-default-rtdb.europe-west1.firebasedatabase.app",
-
-  /* false = show every price (estimates get an "est." label).
-   * true  = show a price only where "basis" is "confirmed" in gear.js; all others read "Ask for price". */
-  showOnlyConfirmedPrices: false
+  store: "https://akhc-sign-default-rtdb.europe-west1.firebasedatabase.app"
 };
