@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AKHC Studio Rental – cameras, lenses and lights for hire</title>
+<meta name="description" content="Cinema and photo gear for hire in the Faroe Islands: ARRI AMIRA, DJI Ronin 4D, Sony cameras, lenses, lighting, sound and grip. Day rates in DKK.">
+<!-- DRAFT: keeps search engines away. Delete the next line when the site is ready to go public. -->
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f0e" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/config.js" defer></script>
+<script src="js/gear.js" defer></script>
+<script src="js/text.js" defer></script>
+<script src="js/quote.js" defer></script>
+<script src="js/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main" data-t="skip">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="#top" aria-label="AKHC Studio Rental">
+      <span class="dot" aria-hidden="true"></span><span class="brand-name">AKHC <b>Studio Rental</b></span>
+    </a>
+    <div class="lang" role="group" aria-label="Language" data-t-aria-label="langLabel">
+      <button type="button" data-lang="en" lang="en" aria-label="English" aria-pressed="true">EN</button>
+      <button type="button" data-lang="fo" lang="fo" aria-label="Føroyskt" aria-pressed="false">FO</button>
+    </div>
+    <nav class="nav" aria-label="Main" data-t-aria-label="navLabel">
+      <a href="#gear" data-t="navGear">Gear &amp; prices</a>
+      <a href="#list" data-t="navList">Your list</a>
+      <a href="#how" data-t="navHow">How it works</a>
+      <a href="#contact" data-t="navContact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div class="hero-text">
+        <p class="kicker" data-t="kicker">Gear rental · Faroe Islands</p>
+        <h1 data-t="h1">Cameras, lenses and lights for hire.</h1>
+        <p class="lead" data-t="lead">Cinema and photo gear from a working filmmaker and photographer. Clear day rates, ready to pick up.</p>
+        <p class="cta">
+          <a class="btn primary" href="#gear" data-t="ctaGear">See gear &amp; prices</a>
+          <a class="btn" href="#contact" data-t="ctaContact">Ask about dates</a>
+        </p>
+      </div>
+      <svg class="lens" viewBox="0 0 240 240" aria-hidden="true" focusable="false">
+        <circle cx="120" cy="120" r="112" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="120" cy="120" r="84" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="120" cy="120" r="56" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="120" cy="120" r="28" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M120 8v224M8 120h224" stroke="currentColor" stroke-width="1" opacity=".5"/>
+        <circle class="lens-dot" cx="152" cy="88" r="9"/>
+      </svg>
+    </div>
+  </section>
+
+  <noscript><div class="wrap"><p class="notice" id="noscript">This page needs JavaScript to show the price list. Please turn it on, or contact us directly.</p></div></noscript>
+
+  <section class="band" id="packages" aria-labelledby="pkg-h" hidden>
+    <div class="wrap">
+      <h2 id="pkg-h" data-t="pkgTitle">Camera packages</h2>
+      <div class="cards" id="pkg-cards"></div>
+    </div>
+  </section>
+
+  <section class="band" id="gear" aria-labelledby="gear-h">
+    <div class="wrap gear-grid">
+    <div class="gear-main">
+      <h2 id="gear-h" data-t="gearTitle">Gear &amp; day rates</h2>
+      <p class="sub" data-t="gearLead">Prices are per day in DKK, excluding VAT. For longer rentals, ask for a quote.</p>
+
+      <div class="tools">
+        <label class="sr" for="q" data-t="searchLabel">Search the gear list</label>
+        <input id="q" type="search" autocomplete="off" placeholder="Search, e.g. Sony, light, 50mm" data-t-placeholder="searchPh">
+        <nav class="chips" id="chips" aria-label="Jump to a category" data-t-aria-label="jumpLabel"></nav>
+      </div>
+      <p class="meta" id="count" role="status" aria-live="polite"></p>
+
+      <div id="gear-list"></div>
+      <p class="empty" id="empty" data-t="noMatch" hidden>Nothing matches that search.</p>
+      <p class="legend" id="legend"></p>
+    </div>
+    <aside class="list" id="list" aria-labelledby="list-h"></aside>
+    </div>
+  </section>
+
+  <section class="band" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <h2 id="how-h" data-t="howTitle">How it works</h2>
+      <ol class="steps">
+        <li><h3 data-t="step1t">Send your dates and gear list</h3><p data-t="step1">Tell us the days, what you need and what it is for.</p></li>
+        <li><h3 data-t="step2t">We confirm</h3><p data-t="step2">We check availability and send you the price.</p></li>
+        <li><h3 data-t="step3t">Pick up</h3><p data-t="step3">Collect the gear and sign a rental agreement.</p></li>
+        <li><h3 data-t="step4t">Return and pay</h3><p data-t="step4">Bring it back, and we send the invoice.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band" id="contact" aria-labelledby="contact-h">
+    <div class="wrap">
+      <h2 id="contact-h" data-t="contactTitle">Contact</h2>
+      <p class="sub" data-t="contactLead">Email us with your dates, what you need and what it is for. We reply with availability and a price.</p>
+      <div id="contact-body"></div>
+    </div>
+  </section>
+</main>
+
+<a class="listbar" id="listbar" href="#list" hidden></a>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p id="foot-company"></p>
+    <p><span data-t="footPrices">Prices in DKK excluding VAT.</span> <span id="foot-updated"></span></p>
+  </div>
+</footer>
+</body>
+</html>
