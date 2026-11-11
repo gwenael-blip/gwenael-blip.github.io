@@ -55,12 +55,16 @@
     $('#packages').hidden = items.length === 0;
   }
 
+  /* The gear list is one drop-down per category, all closed when the page opens, so the page starts as a short list
+   * of category names. A search opens every category that has a match; clearing the search puts them back. */
+  var openCats = {}, printing = false;
+  function searching() { return fold($('#q').value.trim()) !== ''; }
+
   function renderGear() {
-    var host = $('#gear-list'), chips = $('#chips');
-    host.textContent = ''; chips.textContent = '';
+    var host = $('#gear-list');
+    host.textContent = '';
     GEAR.categories.forEach(function (cat) {
       var id = 'cat-' + cat.id;
-      chips.appendChild(el('a', { href: '#' + id, text: tr(cat.name) }));
       var list = el('ul', { 'class': 'items' });
       cat.items.forEach(function (it) {
         var name = el('span', { 'class': 'item-name', text: it.name });
@@ -73,7 +77,13 @@
         if (note) li.firstChild.appendChild(el('span', { 'class': 'item-note', text: note }));
         list.appendChild(li);
       });
-      host.appendChild(el('section', { 'class': 'cat', id: id, 'aria-labelledby': id + '-h' }, [el('h3', { id: id + '-h', text: tr(cat.name) }), list]));
+      var box = el('details', { 'class': 'cat', id: id }, [
+        el('summary', {}, [el('h3', { text: tr(cat.name) }), el('span', { 'class': 'cat-n', text: String(cat.items.length) })]),
+        list
+      ]);
+      // Remember what the visitor opened or closed themselves (not what a search or printing opened).
+      box.addEventListener('toggle', function () { if (!printing && !searching()) openCats[id] = box.open; syncAllBtn(); });
+      host.appendChild(box);
     });
     applyFilter();
   }
@@ -85,9 +95,31 @@
       var ok = words.every(function (w) { return hay.indexOf(w) >= 0; });
       li.hidden = !ok; if (ok) shown++;
     });
-    $$('.cat').forEach(function (c) { c.hidden = !$$('.item:not([hidden])', c).length; });
+    $$('.cat').forEach(function (c) {
+      var any = $$('.item:not([hidden])', c).length > 0;
+      c.hidden = !any;
+      c.open = q ? any : !!openCats[c.id];
+    });
     $('#empty').hidden = shown > 0;
     $('#count').textContent = q ? fill(t('count'), { n: shown }) : '';
+    syncAllBtn();
+  }
+
+  function syncAllBtn() { // "Open all" / "Close all" above the list; not needed during a search
+    var b = $('#cats-all'), cats = $$('.cat'); if (!b) return;
+    b.hidden = !cats.length || searching();
+    b.textContent = t(cats.every(function (c) { return c.open; }) ? 'closeAll' : 'openAll');
+  }
+  function toggleAll() {
+    var cats = $$('.cat'), open = !cats.every(function (c) { return c.open; });
+    cats.forEach(function (c) { openCats[c.id] = open; c.open = open; });
+    syncAllBtn();
+  }
+  function openFromHash() { // a link straight to a category, e.g. …/#cat-lenses
+    var c = /^#cat-[\w-]+$/.test(location.hash) ? document.getElementById(location.hash.slice(1)) : null;
+    if (!c || !c.classList.contains('cat')) return;
+    openCats[c.id] = true; c.open = true;
+    if (c.scrollIntoView) c.scrollIntoView();
   }
 
   function dateText(iso) {
@@ -152,7 +184,13 @@
     if (started || !TXT) return; started = true;
     $$('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); }); });
     $('#q').addEventListener('input', applyFilter);
+    $('#cats-all').addEventListener('click', toggleAll);
+    window.addEventListener('hashchange', openFromHash);
+    // On paper every category is shown; afterwards the page goes back to how it was.
+    window.addEventListener('beforeprint', function () { printing = true; $$('.cat').forEach(function (c) { c.open = true; }); });
+    window.addEventListener('afterprint', function () { printing = false; applyFilter(); });
     if (window.AKHC_QUOTE) window.AKHC_QUOTE.init();
     applyText();
+    openFromHash();
   }
 }());

@@ -80,9 +80,11 @@
       <div class="tools">
         <label class="sr" for="q" data-t="searchLabel">Search the gear list</label>
         <input id="q" type="search" autocomplete="off" placeholder="Search, e.g. Sony, light, 50mm" data-t-placeholder="searchPh">
-        <nav class="chips" id="chips" aria-label="Jump to a category" data-t-aria-label="jumpLabel"></nav>
       </div>
-      <p class="meta" id="count" role="status" aria-live="polite"></p>
+      <div class="cat-bar">
+        <p class="meta" id="count" role="status" aria-live="polite"></p>
+        <button type="button" class="linkbtn" id="cats-all" hidden></button>
+      </div>
 
       <div id="gear-list"></div>
       <p class="empty" id="empty" data-t="noMatch" hidden>Nothing matches that search.</p>
