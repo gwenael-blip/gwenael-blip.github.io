@@ -188,6 +188,7 @@ button.btn { font: inherit; font-weight: 600; cursor: pointer; }
 .list .notice { margin-top: 0; }
 .list .actions { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
 .list .actions.small { gap: 2px 18px; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; } /* a box only robots fill in */
 .list .btn { min-height: 46px; padding: 0 18px; }
 .linkbtn { font: inherit; font-size: .95rem; min-height: 40px; padding: 0; border: 0; background: none; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .linkbtn:disabled { color: var(--edge); text-decoration: none; cursor: default; }

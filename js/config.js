@@ -16,5 +16,11 @@ window.AKHC_CONFIG = {
 
   /* Short links for "Save or share this list": the address of the small store that keeps a shared list in scrambled
    * form (the same one the signing page uses). Leave empty and the page makes a long link that holds the list itself. */
-  store: "https://akhc-sign-default-rtdb.europe-west1.firebasedatabase.app"
+  store: "https://akhc-sign-default-rtdb.europe-west1.firebasedatabase.app",
+
+  /* Sending straight from the page: the access key of a form-to-email service (Web3Forms, web3forms.com).
+   * With a key, "Send quote request" mails the request to the address the key was made for, without opening the
+   * visitor's email app. The key is public by design: it can only send to that one address.
+   * Empty = the visitor's own email app is used, as before. */
+  formKey: "a81571f6-9d08-48ae-8588-c49844713c6c"
 };

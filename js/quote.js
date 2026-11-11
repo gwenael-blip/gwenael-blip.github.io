@@ -1,7 +1,8 @@
 /* AKHC Studio Rental: "Your list". Visitors add gear from the gear list, set dates and send a quote request, or
  * keep the list for later. No prices are shown anywhere: the price comes with the quote.
  *
- * The page has no server of its own. A request leaves through the visitor's own email app (or as text they copy),
+ * The page has no server of its own. A request leaves through a form-to-email service when config.js has a form key
+ * (see sendDirect below), otherwise through the visitor's own email app, or as text they copy,
  * and every request ends with a link (…#r1<data>~) that holds the list, the dates and what they typed. Opening that
  * link shows the list again, and the gear tracker reads the same link to make a booking from it.
  * "Save or share this list" makes a short link when a store is set in config.js (the list is kept there scrambled),
@@ -148,9 +149,11 @@
       '<div id="list-sums">' + sums() + '</div>' +
       '<div class="list-form"><h3>' + esc(t('qDetails')) + '</h3>' + field('p', t('qProject'), 'text', 'maxlength="120"') + field('n', t('qName'), 'text', 'autocomplete="name" maxlength="120"') + field('e', t('qEmail'), 'email', 'autocomplete="email" maxlength="160"') + field('c', t('qCompany'), 'text', 'autocomplete="organization" maxlength="120"') +
       '<label>' + esc(t('qMsg')) + '<textarea data-f="m" rows="3" maxlength="2000">' + esc(form.m) + '</textarea></label></div>' +
-      (CFG.email ? '' : '<p class="notice">' + esc(TXT.en.qSetup || '') + '</p>') +
-      '<div class="actions"><button type="button" class="btn primary" data-q="send"' + (CFG.email ? '' : ' disabled') + '>' + esc(t('qSend')) + '</button><button type="button" class="btn" data-q="copy">' + esc(t('qCopy')) + '</button></div>' +
+      (canSend() ? '' : '<p class="notice">' + esc(TXT.en.qSetup || '') + '</p>') +
+      '<div class="hp" aria-hidden="true"><label>Leave this box empty<input type="text" id="list-hp" tabindex="-1" autocomplete="off"></label></div>' +
+      '<div class="actions"><button type="button" class="btn primary" data-q="send"' + (canSend() && !sending ? '' : ' disabled') + '>' + esc(t('qSend')) + '</button><button type="button" class="btn" data-q="copy">' + esc(t('qCopy')) + '</button></div>' +
       '<p id="list-status" class="status' + (status.bad ? ' bad' : '') + '" role="status" aria-live="polite">' + esc(status.text) + '</p>' +
+      '<div class="actions small" id="list-mail"' + (mailOffer ? '' : ' hidden') + '><button type="button" class="linkbtn" data-q="mail">' + esc(t('qMailInstead')) + '</button></div>' +
       '<div class="actions small"><button type="button" class="linkbtn" data-q="share"' + (has ? '' : ' disabled') + '>' + esc(t('qShare')) + '</button><button type="button" class="linkbtn" data-q="print"' + (has ? '' : ' disabled') + '>' + esc(t('qPrint')) + '</button><button type="button" class="linkbtn" data-q="clear"' + (has || lastCleared ? '' : ' disabled') + '>' + esc(has || !lastCleared ? t('qClear') : t('qUndo')) + '</button></div>' +
       '<div id="list-link" hidden><label>' + esc(t('qLinkReady')) + '<input type="text" readonly id="list-link-in"></label></div>';
     syncOutside();
@@ -171,6 +174,40 @@
       bar.hidden = !n; document.body.classList.toggle('has-list', !!n);
       bar.innerHTML = '<span>' + esc(t('qBar', { n: n })) + '</span><span>' + (d ? esc(t(d === 1 ? 'qDay1' : 'qDaysN', { n: d })) : '') + '</span>';
     }
+  }
+
+  /* ---- sending straight from the page (config.js: formKey) ----
+     With a form key the request goes to a form-to-email service (Web3Forms), which mails it to the address the key was
+     made for; the visitor's own address is the reply-to. Without a key the visitor's own email app is used, and if the
+     service cannot be reached the page offers that email app instead. */
+  var sending = false, lastSent = '', mailOffer = false;
+  function canSend() { return !!(CFG.formKey || CFG.email); }
+  function sig() { return JSON.stringify([rows().map(function (r) { return [r.k, r.n]; }), form]); }
+  function busy(on) {
+    sending = on;
+    var b = $('#list [data-q="send"]');
+    if (b) { b.disabled = on || !canSend(); if (on) b.setAttribute('aria-busy', 'true'); else b.removeAttribute('aria-busy'); }
+    var m = $('#list-mail'); if (m) m.hidden = !mailOffer;
+  }
+  async function sendDirect(text, subject) {
+    if (sending) return;
+    var mine = sig(), hp = $('#list-hp');
+    if (mine === lastSent) { say(t('qAlready')); return; }
+    if (hp && hp.value) { lastSent = mine; say(t('qSentDirect', { e: form.e.trim() })); return; } // only a robot fills the hidden box: nothing is sent
+    mailOffer = false; busy(true); say(t('qSending'));
+    var ctl = typeof AbortController === 'function' ? new AbortController() : null, timer = ctl ? setTimeout(function () { ctl.abort(); }, 20000) : 0;
+    try {
+      var r = await fetch(CFG.formUrl || 'https://api.web3forms.com/submit', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, signal: ctl ? ctl.signal : undefined,
+        body: JSON.stringify({ access_key: CFG.formKey, subject: subject, from_name: 'AKHC Studio Rental website', name: form.n.trim(), email: form.e.trim(), message: text })
+      });
+      var j = null; try { j = await r.json(); } catch (e) { /* not an answer we can read */ }
+      if (!r.ok || !j || j.success !== true) throw new Error('refused');
+      lastSent = mine; say(t('qSentDirect', { e: form.e.trim() }));
+    } catch (e) {
+      mailOffer = !!CFG.email; say(t(CFG.email ? 'qSendFail' : 'qSendFailCopy'), true);
+    }
+    clearTimeout(timer); busy(false);
   }
 
   async function act(what, k) {
@@ -202,9 +239,10 @@
       try { await navigator.clipboard.writeText(text); say(t('qCopied')); } catch (e) { say(t('qCopyFail'), true); }
       return;
     }
-    if (what === 'send' && CFG.email) {
-      var what2 = form.p || form.c || form.n, when = days() ? ', ' + dmy(form.s) + ' - ' + dmy(form.u) : '';
-      location.href = 'mailto:' + CFG.email + '?subject=' + encodeURIComponent(t('qmSubject', { what: what2 }) + when) + '&body=' + encodeURIComponent(text.replace(/\n/g, '\r\n'));
+    var subject = t('qmSubject', { what: form.p || form.c || form.n }) + (days() ? ', ' + dmy(form.s) + ' - ' + dmy(form.u) : '');
+    if (what === 'send' && CFG.formKey) { await sendDirect(text, subject); return; }
+    if ((what === 'send' || what === 'mail') && CFG.email) { // the visitor's own email app, with the request written out
+      location.href = 'mailto:' + CFG.email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text.replace(/\n/g, '\r\n'));
       say(t('qSent'));
     }
   }
